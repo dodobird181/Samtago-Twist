@@ -1,0 +1,14 @@
+1,RandomPlayer,RandomPlayer,1,RandomPlayer,14,game00001.log,
+2,Human,Human,1,Human,3,game00002.log,ILLEGAL MOVE: Player 0, Move: (3, 1), R/F: (2, 2)
+3,RandomPlayer,RandomPlayer,1,RandomPlayer,14,game00003.log,
+4,RandomPlayer,RandomPlayer,1,RandomPlayer,14,game00004.log,
+5,Human,RandomPlayer,1,RandomPlayer,0,game00005.log,ILLEGAL MOVE: Player 0, Move: (3, 2), R/F: (2, 2)
+6,Human,RandomPlayer,1,RandomPlayer,1,game00006.log,ILLEGAL MOVE: Player 0, Move: (3, 3), R/F: (3, 3)
+7,Human,RandomPlayer,1,RandomPlayer,0,game00007.log,ILLEGAL MOVE: Player 0, Move: (3, 2), R/F: (2, 2)
+8,Human,260833487,1,260833487,2,game00008.log,ILLEGAL MOVE: Player 0, Move: (3, 2), R/F: (2, 2)
+9,RandomPlayer,Human,0,RandomPlayer,0,game00009.log,ILLEGAL MOVE: Player 1, Move: (3, 3), R/F: (3, 3)
+10,Human,260833487,1,260833487,0,game00010.log,ILLEGAL MOVE: Player 0, Move: (3, 2), R/F: (2, 2)
+11,260833487,RandomPlayer,1,RandomPlayer,14,game00011.log,
+12,260833487,RandomPlayer,1,RandomPlayer,14,game00012.log,
+13,260833487,RandomPlayer,1,RandomPlayer,14,game00013.log,
+14,260833487,260833487,1,260833487,14,game00014.log,

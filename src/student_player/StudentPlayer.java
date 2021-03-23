@@ -5,16 +5,18 @@ import boardgame.Move;
 import pentago_twist.PentagoPlayer;
 import pentago_twist.PentagoBoardState;
 
-/** A player file submitted by a student. */
+/**
+ * 
+ * @author Samuel Morris (dodobird)
+ *
+ */
 public class StudentPlayer extends PentagoPlayer {
 
-    /**
-     * You must modify this constructor to return your student number. This is
-     * important, because this is what the code that runs the competition uses to
-     * associate you with your agent. The constructor should do nothing else.
-     */
+	/**
+	 * NOTE: Cannot change this function at all.
+	 */
     public StudentPlayer() {
-        super("xxxxxxxxx");
+        super("260833487");
     }
 
     /**
@@ -23,15 +25,6 @@ public class StudentPlayer extends PentagoPlayer {
      * make decisions.
      */
     public Move chooseMove(PentagoBoardState boardState) {
-        // You probably will make separate functions in MyTools.
-        // For example, maybe you'll need to load some pre-processed best opening
-        // strategies...
-        MyTools.getSomething();
-
-        // Is random the best you can do?
-        Move myMove = boardState.getRandomMove();
-
-        // Return your move to be processed by the server.
-        return myMove;
+        return MyTools.MonteCarloTreeSearch(boardState);
     }
 }

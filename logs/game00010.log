@@ -1,0 +1,12 @@
+# Server version 0.08 running on LAPTOP-5R2A9QOF:8123
+# Game ID: 10
+# Board class: pentago_twist.PentagoBoard
+# Timeout: 20000
+# First Move Timeout: 30000
+# Date: Tue Mar 23 12:04:56 EDT 2021
+# Player 1: Player-0, 'Human', running on LAPTOP-5R2A9QOF
+# Player 2: Player-1, '260833487', running on LAPTOP-5R2A9QOF
+START Player-0 Human
+START Player-1 260833487
+GAMEOVER ILLEGAL MOVE: Player 0, Move: (3, 2), R/F: (2, 2) WINNER 1
+# Game ended: Tue Mar 23 12:05:00 EDT 2021
