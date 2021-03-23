@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import boardgame.Move;
 import pentago_twist.PentagoBoardState;
+import pentago_twist.PentagoMove;
 
 public class MyTools {
 	
@@ -14,17 +15,7 @@ public class MyTools {
 	 * FOR TESTING PURPOSES TODO: Delete this before submitting!
 	 */
 	public static void main(String[] args) {
-		Tree<Integer> tree = new Tree<Integer>(5);//tree with root 5
-		System.out.println(tree.rootNode.isRoot());
-		System.out.println(tree.rootNode.hasChildren());
-		tree.rootNode.addChild(3);
-		tree.rootNode.addChild(4);
-		tree.rootNode.addChild(5);
-		System.out.println(tree.rootNode.hasChildren());
-		List<Node<Integer>> rootChildren = tree.rootNode.getUnmodifiableChildren();
-		Node<Integer> child0 = rootChildren.get(0);
-		System.out.println("child0 is root? " + child0.isRoot());
-		System.out.println("child0 has children? " + child0.hasChildren());
+		
 	}
 	
 	private static final int MOVE_TIME_LIMIT = 1900; // 2 second time limit minus a buffer of 100 ms just in case ;)
@@ -138,6 +129,13 @@ class Node<T>{
 		children = new ArrayList<Node<T>>();
 	}
 	
+	/**
+	 * @return the ArrayList of this node's children
+	 */
+	public List<Node<T>> getChildren() {
+		return children;
+	}
+
 	/**
 	 * Construct a node with an ARrayList of children.
 	 * @param value of the node.
