@@ -34,12 +34,37 @@ public class MyTools {
 		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
 			if (currentNode.isLeaf()) {
 				
+				// Play a rollout if the leaf node has not simulated a rollout yet.
+				if (currentNode.value().visitCount == 0) {
+					
+					// Perform rollout
+					System.out.print("Performing rollout: ");
+					int result = stochasticRollout(currentNode.value().board);
+					System.out.println("result = " + result);
+					
+					// Update win and visit counts all the way up the tree
+					System.out.println("Updating values after rollout...");
+					boolean isUpdating = true;
+					while(isUpdating) {
+						currentNode.value().winCount += result;
+						currentNode.value().visitCount += 1;
+						if (currentNode.isRoot()) {
+							isUpdating = false;
+						}
+						else {
+							currentNode = currentNode.parent();
+						}
+					}
+				}
+				else { // Generate children if the leaf node has at least one rollout under its belt
+					
+				}
 			}
 			else { // Use the "Tree Policy" to navigate towards a leaf node.
 				
 				double maxUCB = 0;
-				Node<MCTSInfo> maxNode = null;
-				List<Node<MCTSInfo>> children = currentNode.getUnmodifiableChildren();
+				Node<MCTSInfo> maxChild = null;
+				List<Node<MCTSInfo>> children = currentNode.getChildren();
 				
 				// Iterate through the current node's children to calculate their UCBs
 				for(Node<MCTSInfo> child : children) {
@@ -53,15 +78,45 @@ public class MyTools {
 					// Replace max if a new highest UCB has been found
 					if (maxUCB < childUCB) {
 						maxUCB = childUCB;
-						maxNode = child;
+						maxChild = child;
 					}
 				}
+				// Set the current node to the child with highest UCB and restart the loop
+				currentNode = maxChild;
  			}
 		}
 		
 		Move m = board.getRandomMove();
 		return m;
 	}
+	
+	/**
+	 * Simulates a game rollout from a given boardState.
+	 * @param boardState the boardState to rollout from.
+	 * @return 1 if the player whose turn it was in the initial board state
+	 * won the game, 0 otherwise.
+	 */
+	public static int stochasticRollout(PentagoBoardState boardState) {
+		
+		// Deep copy of the board state so we don't affect the board state in the tree
+		PentagoBoardState currentState = (PentagoBoardState) boardState.clone();
+		
+		int AI_player_number = boardState.getTurnPlayer();
+		
+		// Process random moves for each player until someone wins.
+		while(currentState.gameOver() == false) {
+			PentagoMove randomMove = (PentagoMove) currentState.getRandomMove();
+			currentState.processMove(randomMove);
+		}
+		
+		// Return 1 if the AI agent won, 0 otherwise
+		int winner = currentState.getWinner();
+		if (winner == AI_player_number) {
+			return 1;
+		}
+		return 0;
+	}
+	
 }
 
 /**
