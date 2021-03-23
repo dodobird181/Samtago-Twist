@@ -12,3 +12,8 @@
 12,260833487,RandomPlayer,1,RandomPlayer,14,game00012.log,
 13,260833487,RandomPlayer,1,RandomPlayer,14,game00013.log,
 14,260833487,260833487,1,260833487,14,game00014.log,
+15,260833487,RandomPlayer,1,RandomPlayer,14,game00015.log,
+16,RandomPlayer,260833487,1,260833487,14,game00016.log,
+17,RandomPlayer,RandomPlayer,1,RandomPlayer,14,game00017.log,
+18,260833487,RandomPlayer,1,RandomPlayer,14,game00018.log,
+19,260833487,RandomPlayer,1,RandomPlayer,14,game00019.log,
