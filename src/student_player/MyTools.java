@@ -29,6 +29,64 @@ public class MyTools {
 	
 	private static final int MOVE_TIME_LIMIT = 1900; // 2 second time limit minus a buffer of 100 ms just in case ;)
 	
+	/**
+	 * Performs a Monte Carlo Tree Search, starting from the given boardState.
+	 * @param boardState is the board state to start the MCTS from.
+	 * @return a Move determined to be the best move by the MCTS.
+	 */
+	public static Move MonteCarloTreeSearch(PentagoBoardState board) {
+		int startTime = (int) System.currentTimeMillis();
+		
+		Tree<MCTSInfo> searchTree = new Tree<MCTSInfo>(new MCTSInfo(board));
+		Node<MCTSInfo> currentNode = searchTree.rootNode;
+		
+		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
+			if (currentNode.isLeaf()) {
+				
+			}
+			else { // Use the "Tree Policy" to navigate towards a leaf node.
+				
+				double maxUCB = 0;
+				Node<MCTSInfo> maxNode = null;
+				List<Node<MCTSInfo>> children = currentNode.getUnmodifiableChildren();
+				
+				// Iterate through the current node's children to calculate their UCBs
+				for(Node<MCTSInfo> child : children) {
+					
+					// Calculate UCB
+					float childWinRate = child.value().winCount / child.value().visitCount;
+					int childVisitCount = child.value().visitCount;
+					int currentVisitCount = currentNode.value().visitCount;
+					double childUCB = childWinRate + Math.sqrt((2*Math.log(currentVisitCount)) / childVisitCount);
+				
+					// Replace max if a new highest UCB has been found
+					if (maxUCB < childUCB) {
+						maxUCB = childUCB;
+						maxNode = child;
+					}
+				}
+ 			}
+		}
+		
+		Move m = board.getRandomMove();
+		return m;
+	}
+}
+
+/**
+ * Datatype of information to store inside each node for the MCTS.
+ * @author Samuel Morris (dodobird)
+ */
+class MCTSInfo{
+	public int visitCount = 0;
+	public int winCount = 0;
+	public PentagoBoardState board;
+	
+	public MCTSInfo(PentagoBoardState board) {
+		this.board = board;
+	}
+}
+
 
 
 
