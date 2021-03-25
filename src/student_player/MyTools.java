@@ -6,17 +6,15 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import com.sun.jdi.Value;
-
 import boardgame.Move;
-import pentago_twist.PentagoBoard;
 import pentago_twist.PentagoBoardState;
 import pentago_twist.PentagoMove;
 
 public class MyTools {
 	
 	/**
-	 * FOR TESTING PURPOSES TODO: Delete this before submitting!
+	 * FOR TESTING PURPOSES 
+	 * TODO: Delete this before submitting!
 	 */
 	public static void main(String[] args) {
 		Tree<Integer> tree = new Tree<Integer>(3);
@@ -52,15 +50,7 @@ public class MyTools {
 				}
 				else 
 				{
-					// Generate children if the leaf node has been visited before
-					ArrayList<PentagoMove> childGeneratingMoves = currentNode.data.board.getAllLegalMoves();
-					for(PentagoMove move : childGeneratingMoves)
-					{
-						numChildrenCreated++;
-						PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
-						newBoard.processMove(move); // Apply move to cloned board
-						currentNode.addChild(new MonteCarloData(newBoard, move));// Add child to Monte Carlo Tree
-					}
+					generateChildrenPlain(currentNode);
 					
 					// Perform a rollout on the first child of the former leaf node
 					Node<MonteCarloData> firstChild = currentNode.getChildren().get(0);
@@ -118,12 +108,44 @@ public class MyTools {
 		return searchTree.rootNode.getChildren().get(0).data.move;
 	}
 	
+	public static void generateChildrenPlain(Node<MonteCarloData> currentNode) {
+		
+		// Generate children if the leaf node has been visited before
+		for(PentagoMove move : currentNode.data.board.getAllLegalMoves())
+		{
+			numChildrenCreated++;
+			PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
+			newBoard.processMove(move); // Apply move to cloned board
+			currentNode.addChild(new MonteCarloData(newBoard, move));// Add child to Monte Carlo Tree
+		}
+	}
+	
+	public static void generateChildrenNoDuplicateBoardStates(Node<MonteCarloData> currentNode) {
+		
+		ArrayList<PentagoBoardState> generatedStates = new ArrayList<PentagoBoardState>();
+		
+		// Generate children if the leaf node has been visited before
+		for(PentagoMove move : currentNode.data.board.getAllLegalMoves())
+		{
+			
+			PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
+			newBoard.processMove(move); // Apply move to cloned board
+			
+			if (!generatedStates.contains(newBoard)) {
+				currentNode.addChild(new MonteCarloData(newBoard, move));// Add child to Monte Carlo Tree
+				generatedStates.add(newBoard);
+				numChildrenCreated++;
+			}
+			
+		}
+	}
+
 	/**
 	 * Performs a rollout on the currentNode and updates the visited and win counts for
 	 * the currentNode and each of its parents.
 	 * @param currentNode is the node that the rollout is performed on.
 	 */
-	private static void rolloutWithUpdate(Node<MonteCarloData> currentNode) {
+	public static void rolloutWithUpdate(Node<MonteCarloData> currentNode) {
 		
 		numRollouts++;
 		// Perform rollout

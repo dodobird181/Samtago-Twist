@@ -53,3 +53,28 @@
 53,260833487,RandomPlayer,0,260833487,7,game00053.log,
 54,Human,260833487,1,260833487,1,game00054.log,ILLEGAL MOVE: Player 0, Move: (4, 0), R/F: (2, 2)
 55,Human,260833487,1,260833487,1,game00055.log,ILLEGAL MOVE: Player 0, Move: (4, 0), R/F: (2, 2)
+56,260833487,Human,0,260833487,0,game00056.log,ILLEGAL MOVE: Player 1, Move: (3, 1), R/F: (2, 2)
+57,Human,260833487,1,260833487,6,game00057.log,ILLEGAL MOVE: Player 0, Move: (4, 1), R/F: (2, 2)
+58,RandomPlayer,260833487,1,260833487,9,game00058.log,
+59,260833487,RandomPlayer,0,260833487,7,game00059.log,
+60,RandomPlayer,260833487,1,260833487,9,game00060.log,
+61,260833487,RandomPlayer,0,260833487,7,game00061.log,
+62,RandomPlayer,260833487,1,260833487,9,game00062.log,
+63,RandomPlayer,260833487,0,RandomPlayer,2,game00063.log,DISCONNECTION Player-1
+64,260833487,RandomPlayer,0,260833487,7,game00064.log,
+65,RandomPlayer,260833487,1,260833487,9,game00065.log,
+66,260833487,RandomPlayer,0,260833487,7,game00066.log,
+67,RandomPlayer,260833487,1,260833487,9,game00067.log,
+68,260833487,RandomPlayer,0,260833487,7,game00068.log,
+69,260833487,RandomPlayer,0,260833487,7,game00069.log,
+70,RandomPlayer,260833487,1,260833487,9,game00070.log,
+71,260833487,RandomPlayer,0,260833487,8,game00071.log,
+72,RandomPlayer,260833487,1,260833487,10,game00072.log,
+73,260833487,RandomPlayer,0,260833487,8,game00073.log,
+74,RandomPlayer,260833487,1,260833487,9,game00074.log,
+75,260833487,RandomPlayer,0,260833487,7,game00075.log,
+76,RandomPlayer,260833487,1,260833487,10,game00076.log,
+77,260833487,RandomPlayer,0,260833487,7,game00077.log,
+78,RandomPlayer,260833487,1,260833487,9,game00078.log,
+79,260833487,RandomPlayer,0,260833487,8,game00079.log,
+80,RandomPlayer,MCTS_NoDuplicateChildStates,1,MCTS_NoDuplicateChildStates,9,game00080.log,

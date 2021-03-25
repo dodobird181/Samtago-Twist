@@ -1,5 +1,9 @@
 *.class
 *.log
 *.txt
-logs/outcomes.txt
+logs/.*txt
 bin/student_player/MyTools.class
+bin/autoplay/Autoplay.class
+bin/student_player/MyTools.class
+logs/outcomes.txt
+logs/outcomes.txt
