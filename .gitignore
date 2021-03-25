@@ -1,3 +1,5 @@
 *.class
 *.log
 *.txt
+logs/outcomes.txt
+bin/student_player/MyTools.class

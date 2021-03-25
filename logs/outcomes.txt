@@ -48,3 +48,8 @@
 48,260833487,RandomPlayer,0,260833487,13,game00048.log,
 49,260833487,RandomPlayer,1,RandomPlayer,14,game00049.log,
 50,260833487,RandomPlayer,1,RandomPlayer,14,game00050.log,
+51,260833487,RandomPlayer,0,260833487,7,game00051.log,
+52,260833487,RandomPlayer,0,260833487,7,game00052.log,
+53,260833487,RandomPlayer,0,260833487,7,game00053.log,
+54,Human,260833487,1,260833487,1,game00054.log,ILLEGAL MOVE: Player 0, Move: (4, 0), R/F: (2, 2)
+55,Human,260833487,1,260833487,1,game00055.log,ILLEGAL MOVE: Player 0, Move: (4, 0), R/F: (2, 2)
