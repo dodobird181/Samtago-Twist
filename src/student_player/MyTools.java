@@ -35,14 +35,16 @@ public class MyTools {
 	public static Move MonteCarloTreeSearch(PentagoBoardState board) {
 		int startTime = (int) System.currentTimeMillis();
 		
-		Tree<MCTSInfo> searchTree = new Tree<MCTSInfo>(new MCTSInfo(board));
-		Node<MCTSInfo> currentNode = searchTree.rootNode;
+		MonteCarloData rootDatum = new MonteCarloData(board, null); // Root contains null-move
+		Tree<MonteCarloData> searchTree = new Tree<MonteCarloData>(rootDatum); // Init search tree
+		Node<MonteCarloData> currentNode = searchTree.rootNode;
 		
+		// Start search loop
 		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
 			if (currentNode.isLeaf()) // LEAF
 			{
 				// Perform a rollout if the leaf node has zero visits so far
-				if (currentNode.value.visitCount == 0) 
+				if (currentNode.data.visitCount == 0) 
 				{
 					rolloutWithUpdate(currentNode);
 					currentNode = searchTree.rootNode;
@@ -50,17 +52,17 @@ public class MyTools {
 				else 
 				{
 					// Generate children if the leaf node has been visited before
-					ArrayList<PentagoMove> childGeneratingMoves = currentNode.value.board.getAllLegalMoves();
+					ArrayList<PentagoMove> childGeneratingMoves = currentNode.data.board.getAllLegalMoves();
 					for(PentagoMove move : childGeneratingMoves)
 					{
 						numChildrenCreated++;
-						PentagoBoardState newBoard = (PentagoBoardState) currentNode.value.board.clone();
+						PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
 						newBoard.processMove(move); // Apply move to cloned board
-						currentNode.addChild(new MCTSInfo(newBoard));// Add child to Monte Carlo Tree
+						currentNode.addChild(new MonteCarloData(newBoard, move));// Add child to Monte Carlo Tree
 					}
 					
 					// Perform a rollout on the first child of the former leaf node
-					Node<MCTSInfo> firstChild = currentNode.getChildren().get(0);
+					Node<MonteCarloData> firstChild = currentNode.getChildren().get(0);
 					rolloutWithUpdate(firstChild);
 					currentNode = searchTree.rootNode;
 				}
@@ -69,19 +71,19 @@ public class MyTools {
 			{
 				// Use the "Tree Policy" to navigate towards a leaf node.
 				double maxUCB = 0;
-				Node<MCTSInfo> maxChild = null;
-				List<Node<MCTSInfo>> children = currentNode.getChildren();
+				Node<MonteCarloData> maxChild = null;
+				List<Node<MonteCarloData>> children = currentNode.getChildren();
 				
 				System.out.println("Calculating the UCB for all child nodes...");
 				// Iterate through the current node's children to calculate their UCBs
-				for(Node<MCTSInfo> child : children) {
+				for(Node<MonteCarloData> child : children) {
 					
-					System.out.println("Visit count for UCB calculation: " + child.value.visitCount);
-					System.out.println("Win count for UCB calculation: " + child.value.winCount);
+					System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
+					System.out.println("Win count for UCB calculation: " + child.data.winCount);
 					
 					// Win rate is either zero or the child's wins / visits.
-					int visits = child.value.visitCount;
-					int wins = child.value.winCount;
+					int visits = child.data.visitCount;
+					int wins = child.data.winCount;
 					float childWinRate;
 					if (visits == 0) {
 						childWinRate = 0;
@@ -90,7 +92,7 @@ public class MyTools {
 						childWinRate = wins / visits;
 					}
 					
-					int currentVisitCount = currentNode.value.visitCount;
+					int currentVisitCount = currentNode.data.visitCount;
 					double childUCB = childWinRate + Math.sqrt((2*Math.log(currentVisitCount)) / visits);
 				
 					// Replace max if a new highest UCB has been found
@@ -102,18 +104,16 @@ public class MyTools {
 				// Set the current node to the child with highest UCB and restart the loop
 				currentNode = maxChild;
  			}
-		}
-		
-		List<Node<MCTSInfo>> rootChildren = searchTree.rootNode.getChildren();
+		}// POST SEARCH
 		
 		// Find the highest scoring root child
 		float bestWinRate = 0;
-		Node<MCTSInfo> bestChild = rootChildren.get(0);
-		for(Node<MCTSInfo> child : rootChildren) {
-			float childWinRate = child.value.visitCount;
+		Node<MonteCarloData> bestChild = null;
+		for(Node<MonteCarloData> child : searchTree.rootNode.getChildren()) {
+			float childWinRate = child.data.visitCount;
 			if (childWinRate == 0) continue;
 			else {
-				childWinRate = child.value.winCount / child.value.visitCount;
+				childWinRate = child.data.winCount / child.data.visitCount;
 				if (childWinRate > bestWinRate) {
 					bestWinRate = childWinRate;
 					bestChild = child;
@@ -122,11 +122,11 @@ public class MyTools {
 		}
 		
 		PentagoMove bestMove = null;
-		ArrayList<PentagoMove> possibleMoves = searchTree.rootNode.value.board.getAllLegalMoves();
+		ArrayList<PentagoMove> possibleMoves = searchTree.rootNode.data.board.getAllLegalMoves();
 		for(PentagoMove move : possibleMoves) {
-			PentagoBoardState moveBoard = (PentagoBoardState) searchTree.rootNode.value.board.clone();
+			PentagoBoardState moveBoard = (PentagoBoardState) searchTree.rootNode.data.board.clone();
 			moveBoard.processMove(move);
-			if (moveBoard.equals(bestChild.value.board)) {
+			if (moveBoard.equals(bestChild.data.board)) {
 				bestMove = move;
 				break;
 			}
@@ -146,21 +146,21 @@ public class MyTools {
 	 * the currentNode and each of its parents.
 	 * @param currentNode is the node that the rollout is performed on.
 	 */
-	private static void rolloutWithUpdate(Node<MCTSInfo> currentNode) {
+	private static void rolloutWithUpdate(Node<MonteCarloData> currentNode) {
 		
 		numRollouts++;
 		// Perform rollout
-		int result = stochasticRollout(currentNode.value.board);
+		int result = stochasticRollout(currentNode.data.board);
 		System.out.println("result = " + result);
 		
 		// Update win and visit counts all the way up the tree
 		System.out.println("Updating values after rollout...");
 		boolean isUpdating = true;
 		while(isUpdating) {
-			currentNode.value.winCount += result;
-			currentNode.value.visitCount += 1;
-			System.out.println("Wincount: " + currentNode.value.winCount);
-			System.out.println("Visitcount: " + currentNode.value.visitCount);
+			currentNode.data.winCount += result;
+			currentNode.data.visitCount += 1;
+			System.out.println("Wincount: " + currentNode.data.winCount);
+			System.out.println("Visitcount: " + currentNode.data.visitCount);
 			if (currentNode.isRoot()) {
 				isUpdating = false;
 			}
@@ -176,7 +176,7 @@ public class MyTools {
 	 * @return 1 if the player whose turn it was in the initial board state
 	 * won the game, 0 otherwise.
 	 */
-	public static int stochasticRollout(PentagoBoardState boardState) {
+	private static int stochasticRollout(PentagoBoardState boardState) {
 		
 		// Deep copy of the board state so we don't affect the board state in the tree
 		PentagoBoardState currentState = (PentagoBoardState) boardState.clone();
@@ -203,13 +203,14 @@ public class MyTools {
  * Datatype of information to store inside each node for the MCTS.
  * @author Samuel Morris (dodobird)
  */
-class MCTSInfo{
+class MonteCarloData{
+	
 	public int visitCount = 0;
 	public int winCount = 0;
 	public PentagoBoardState board;
 	public PentagoMove move;
 	
-	public MCTSInfo(PentagoBoardState board, PentagoMove move) {
+	public MonteCarloData(PentagoBoardState board, PentagoMove move) {
 		this.board = board;
 		this.move = move;
 	}
@@ -251,7 +252,7 @@ class Tree<T>{
  */
 class Node<T>{
 	
-	public T value;
+	public T data;
 	private Optional<Node<T>> parent;// immutable option for a parent node
 	private ArrayList<Node<T>> children;// mutable list of children
 	
@@ -261,7 +262,7 @@ class Node<T>{
 	 * @param parent of the node.
 	 */
 	public Node(T value, Node<T> parent) {
-		this.value = value;
+		this.data = value;
 		this.parent = Optional.ofNullable(parent);
 		children = new ArrayList<Node<T>>();
 	}
@@ -360,7 +361,7 @@ class Node<T>{
 		if (o == null) return false;
 		if (!(o instanceof Node<?>)) return false;
 		Node<?> n = (Node<?>)o;
-		if (n.value == this.value && n.parent.equals(this.parent)) {
+		if (n.data == this.data && n.parent.equals(this.parent)) {
 			return true;
 		}
 		return false;
