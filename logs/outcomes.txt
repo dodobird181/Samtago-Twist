@@ -42,3 +42,9 @@
 42,260833487,RandomPlayer,1,RandomPlayer,14,game00042.log,
 43,260833487,RandomPlayer,1,RandomPlayer,14,game00043.log,
 44,RandomPlayer,260833487,0,RandomPlayer,0,game00044.log,TIMEOUT
+45,RandomPlayer,260833487,1,260833487,12,game00045.log,
+46,260833487,RandomPlayer,1,RandomPlayer,15,game00046.log,
+47,260833487,260833487,1,260833487,10,game00047.log,
+48,260833487,RandomPlayer,0,260833487,13,game00048.log,
+49,260833487,RandomPlayer,1,RandomPlayer,14,game00049.log,
+50,260833487,RandomPlayer,1,RandomPlayer,14,game00050.log,

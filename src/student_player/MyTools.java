@@ -2,6 +2,7 @@ package student_player;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -74,12 +75,12 @@ public class MyTools {
 				Node<MonteCarloData> maxChild = null;
 				List<Node<MonteCarloData>> children = currentNode.getChildren();
 				
-				System.out.println("Calculating the UCB for all child nodes...");
+				//System.out.println("Calculating the UCB for all child nodes...");
 				// Iterate through the current node's children to calculate their UCBs
 				for(Node<MonteCarloData> child : children) {
 					
-					System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
-					System.out.println("Win count for UCB calculation: " + child.data.winCount);
+					//System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
+					//System.out.println("Win count for UCB calculation: " + child.data.winCount);
 					
 					// Win rate is either zero or the child's wins / visits.
 					int visits = child.data.visitCount;
@@ -106,29 +107,20 @@ public class MyTools {
  			}
 		}// POST SEARCH
 		
-		// Find the highest scoring root child
-		float bestWinRate = 0;
-		Node<MonteCarloData> bestChild = null;
-		for(Node<MonteCarloData> child : searchTree.rootNode.getChildren()) {
-			float childWinRate = child.data.visitCount;
-			if (childWinRate == 0) continue;
+		// Find the move associated with the node that has the highest winRate
+		float bestWinRate = Float.NEGATIVE_INFINITY;
+		PentagoMove bestMove = null;
+		
+		for(Node<MonteCarloData> child : searchTree.rootNode.getChildren().stream().filter(MCD -> {MCD.data.visitCount != 0})) {
+			if (child.data.visitCount == 0) {
+				continue;
+			}
 			else {
 				childWinRate = child.data.winCount / child.data.visitCount;
 				if (childWinRate > bestWinRate) {
 					bestWinRate = childWinRate;
-					bestChild = child;
+					bestMove = child.data.move;
 				}
-			}
-		}
-		
-		PentagoMove bestMove = null;
-		ArrayList<PentagoMove> possibleMoves = searchTree.rootNode.data.board.getAllLegalMoves();
-		for(PentagoMove move : possibleMoves) {
-			PentagoBoardState moveBoard = (PentagoBoardState) searchTree.rootNode.data.board.clone();
-			moveBoard.processMove(move);
-			if (moveBoard.equals(bestChild.data.board)) {
-				bestMove = move;
-				break;
 			}
 		}
 		
@@ -151,16 +143,16 @@ public class MyTools {
 		numRollouts++;
 		// Perform rollout
 		int result = stochasticRollout(currentNode.data.board);
-		System.out.println("result = " + result);
+		//System.out.println("result = " + result);
 		
 		// Update win and visit counts all the way up the tree
-		System.out.println("Updating values after rollout...");
+		//System.out.println("Updating values after rollout...");
 		boolean isUpdating = true;
 		while(isUpdating) {
 			currentNode.data.winCount += result;
 			currentNode.data.visitCount += 1;
-			System.out.println("Wincount: " + currentNode.data.winCount);
-			System.out.println("Visitcount: " + currentNode.data.visitCount);
+			//System.out.println("Wincount: " + currentNode.data.winCount);
+			//System.out.println("Visitcount: " + currentNode.data.visitCount);
 			if (currentNode.isRoot()) {
 				isUpdating = false;
 			}
@@ -213,6 +205,24 @@ class MonteCarloData{
 	public MonteCarloData(PentagoBoardState board, PentagoMove move) {
 		this.board = board;
 		this.move = move;
+	}
+	
+	/**
+	 * A comparator that sorts MonteCarloData nodes by highest winrate first.
+	 */
+	public static Comparator<Node<MonteCarloData>> highestWinrate(){
+		return new Comparator<Node<MonteCarloData>>() {
+
+			@Override
+			public int compare(Node<MonteCarloData> n1, Node<MonteCarloData> n2) {
+				
+				float n1Winrate = (n1.data.winCount + 1) / (n1.data.visitCount + 1);
+				float n2Winrate = (n2.data.winCount + 1) / (n2.data.visitCount + 1);
+				if (n1Winrate > n2Winrate) return 1;
+				else if (n1Winrate < n2Winrate) return -1;
+				return 0;
+			}
+		};
 	}
 }
 
