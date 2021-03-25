@@ -108,29 +108,14 @@ public class MyTools {
 		}// POST SEARCH
 		
 		// Find the move associated with the node that has the highest winRate
-		float bestWinRate = Float.NEGATIVE_INFINITY;
-		PentagoMove bestMove = null;
-		
-		for(Node<MonteCarloData> child : searchTree.rootNode.getChildren().stream().filter(MCD -> {MCD.data.visitCount != 0})) {
-			if (child.data.visitCount == 0) {
-				continue;
-			}
-			else {
-				childWinRate = child.data.winCount / child.data.visitCount;
-				if (childWinRate > bestWinRate) {
-					bestWinRate = childWinRate;
-					bestMove = child.data.move;
-				}
-			}
-		}
+		searchTree.rootNode.getChildren().sort(MonteCarloData.highestWinrate());
 		
 		//Print MCTS stats
 		System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
 		numRollouts = 0;
 		numChildrenCreated = 0;
 		
-		if (bestMove == null) throw new NullPointerException("BEST MOVE IS NULL WHATTTTTT THE FUCK");
-		return bestMove;
+		return searchTree.rootNode.getChildren().get(0).data.move;
 	}
 	
 	/**
