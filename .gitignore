@@ -1,7 +1,3 @@
-
-bin/student_player/MyTools.class
 *.class
 *.log
 *.txt
-logs/outcomes.txt
-*.class
