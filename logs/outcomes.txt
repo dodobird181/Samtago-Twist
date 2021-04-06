@@ -78,3 +78,6 @@
 78,RandomPlayer,260833487,1,260833487,9,game00078.log,
 79,260833487,RandomPlayer,0,260833487,8,game00079.log,
 80,RandomPlayer,MCTS_NoDuplicateChildStates,1,MCTS_NoDuplicateChildStates,9,game00080.log,
+98,RandomPlayer,MCTS_NoDuplicateChildStates,1,MCTS_NoDuplicateChildStates,9,game00098.log,
+99,MCTS_NoDuplicateChildStates,RandomPlayer,0,MCTS_NoDuplicateChildStates,8,game00099.log,
+100,RandomPlayer,MCTS_NoDuplicateChildStates,1,MCTS_NoDuplicateChildStates,10,game00100.log,
