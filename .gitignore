@@ -8,3 +8,5 @@ bin/student_player/MyTools.class
 logs/outcomes.txt
 logs/outcomes.txt
 logs/outcomes.txt
+*.class
+*.class

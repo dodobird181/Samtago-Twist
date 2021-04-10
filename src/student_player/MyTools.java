@@ -6,7 +6,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
+import boardgame.Board;
+import boardgame.BoardState;
 import boardgame.Move;
+import pentago_twist.PentagoBoard;
 import pentago_twist.PentagoBoardState;
 import pentago_twist.PentagoMove;
 
@@ -15,11 +18,20 @@ public class MyTools {
 	/**
 	 * FOR TESTING PURPOSES 
 	 * TODO: Delete this before submitting!
+	 * 
+	 * 
+	 * 
+	 * 
+	 * TODO: CHANGE pentago board state's random back to 2019!!!
+	 * 
+	 * 
 	 */
 	public static void main(String[] args) {
-		Tree<Integer> tree = new Tree<Integer>(3);
-		tree.rootNode.addChild(5);
-		tree.rootNode.getChildren().get(0).addChild(6);
+		
+		StudentPlayer player = new StudentPlayer();
+		BoardState pBoardState = player.createBoard().getBoardState();
+		
+		MonteCarloTreeSearch((PentagoBoardState) pBoardState);
 	}
 	
 	private static final int MOVE_TIME_LIMIT = 1800; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
@@ -50,7 +62,7 @@ public class MyTools {
 				}
 				else 
 				{
-					generateChildrenPlain(currentNode);
+					generateChildrenNoDuplicateBoardStates(currentNode);
 					
 					// Perform a rollout on the first child of the former leaf node
 					Node<MonteCarloData> firstChild = currentNode.getChildren().get(0);
@@ -104,6 +116,9 @@ public class MyTools {
 		System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
 		numRollouts = 0;
 		numChildrenCreated = 0;
+		
+		// Print move string
+		System.out.println("MCTS chose the move: " + searchTree.rootNode.getChildren().get(0).data.move.toPrettyString());
 		
 		return searchTree.rootNode.getChildren().get(0).data.move;
 	}
