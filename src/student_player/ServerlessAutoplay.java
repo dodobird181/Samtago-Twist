@@ -8,7 +8,7 @@ import pentago_twist.RandomPentagoPlayer;
 
 public class ServerlessAutoplay {
 	
-	private static int NUMBER_OF_GAMES = 10;
+	private static int NUMBER_OF_GAMES = 25;
 	
 	public static void main(String[] args) {
 		new ServerlessAutoplay(new StudentPlayer(), new RandomPentagoPlayer(), NUMBER_OF_GAMES);
@@ -19,7 +19,6 @@ public class ServerlessAutoplay {
 		PentagoBoardState board;
 		int p1Wins = 0, p2Wins = 0;
 		for (int i = 0; i < gamesToPlay; i++) {
-			System.out.println("Playing Game " + i + "...");
 			board = new PentagoBoardState();
 			while(board.getWinner() == PentagoBoard.NOBODY) {
 				if (board.getTurnPlayer() == 0) {
@@ -30,12 +29,17 @@ public class ServerlessAutoplay {
 				}
 			}
 			int winner = board.getWinner();
-			if (winner == PentagoBoard.DRAW) continue;
+			if (winner == PentagoBoard.DRAW) {
+				System.out.println("Game " + i + "is a draw");
+				continue;
+			}
 			if (winner == 0) {
 				p1Wins++;
+				System.out.println(p1.getName() + " wins game " + i);
 			}
 			else {
 				p2Wins++;
+				System.out.println(p2.getName() + " wins game " + i);
 			}
 		}
 		

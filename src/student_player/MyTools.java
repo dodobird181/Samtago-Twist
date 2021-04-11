@@ -31,7 +31,7 @@ public class MyTools {
 		
 	}
 	
-	private static final int MOVE_TIME_LIMIT = 100; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
+	private static final int MOVE_TIME_LIMIT = 1800; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
 	
 	/**
 	 * Performs a Monte Carlo Tree Search, starting from the given boardState.
@@ -101,21 +101,25 @@ public class MyTools {
  			}
 		}// POST SEARCH
 		
-		//tree.root.childMap().values().forEach(child -> System.out.println(child.data.winRate()));
-		
 		// Find the node with the highest win rate
 		ArrayList<Node<Move, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
 		rootChildrenList.sort(NodeBoard.byHighestWinrate());
 		Move bestMove = rootChildrenList.get(0).data.move;
 		
+		// Print sorted list and best winRate
+		//rootChildrenList.forEach(child -> {
+		//	System.out.println(child.data.winRate());
+		//});
+		//System.out.println("BestMove winRate is " + rootChildrenList.get(0).data.winRate());
+		
 		
 		//Print MCTS stats
-		System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
+		//System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
 		numRollouts = 0;
 		numChildrenCreated = 0;
 		
 		// Print move string
-		System.out.println("MCTS chose the move: " + bestMove.toPrettyString());
+		//System.out.println("MCTS chose the move: " + bestMove.toPrettyString());
 		
 		return bestMove;
 	}
@@ -232,10 +236,8 @@ class NodeBoard{
 			@Override
 			public int compare(Node<Move, NodeBoard> n1, Node<Move, NodeBoard> n2) {
 				
-				float n1Winrate = (n1.data.winCount + 1) / (n1.data.visitCount + 1);
-				float n2Winrate = (n2.data.winCount + 1) / (n2.data.visitCount + 1);
-				if (n1Winrate > n2Winrate) return 1;
-				else if (n1Winrate < n2Winrate) return -1;
+				if (n1.data.winRate() > n2.data.winRate()) return -1;
+				else if (n1.data.winRate() < n2.data.winRate()) return 1;
 				return 0;
 			}
 		};
