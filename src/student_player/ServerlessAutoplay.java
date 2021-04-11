@@ -22,10 +22,20 @@ public class ServerlessAutoplay {
 			board = new PentagoBoardState();
 			while(board.getWinner() == PentagoBoard.NOBODY) {
 				if (board.getTurnPlayer() == 0) {
-					board.processMove((PentagoMove) p1.chooseMove(board));
+					if (i % 2 == 0) {
+						board.processMove((PentagoMove) p1.chooseMove(board));
+					}
+					else {
+						board.processMove((PentagoMove) p2.chooseMove(board));
+					}
 				}
 				else {
-					board.processMove((PentagoMove) p2.chooseMove(board));
+					if (i % 2 == 0) {
+						board.processMove((PentagoMove) p2.chooseMove(board));
+					}
+					else {
+						board.processMove((PentagoMove) p1.chooseMove(board));
+					}
 				}
 			}
 			int winner = board.getWinner();
@@ -33,13 +43,27 @@ public class ServerlessAutoplay {
 				System.out.println("Game " + i + "is a draw");
 				continue;
 			}
-			if (winner == 0) {
-				p1Wins++;
-				System.out.println(p1.getName() + " wins game " + i);
-			}
 			else {
-				p2Wins++;
-				System.out.println(p2.getName() + " wins game " + i);
+				if (i % 2 == 0) {
+					if (winner == 0) {
+						p1Wins++;
+						System.out.println(p1.getName() + " wins game " + i);
+					}
+					else {
+						p2Wins++;
+						System.out.println(p2.getName() + " wins game " + i);
+					}
+				}
+				else {
+					if (winner == 1) {
+						p1Wins++;
+						System.out.println(p1.getName() + " wins game " + i);
+					}
+					else {
+						p2Wins++;
+						System.out.println(p2.getName() + " wins game " + i);
+					}
+				}
 			}
 		}
 		

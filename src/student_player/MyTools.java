@@ -29,23 +29,181 @@ public class MyTools {
 		
 		PentagoBoardState boardState = new PentagoBoardState();
 		PentagoCoord coord = new PentagoCoord(0, 0);
+		PentagoMove move = new PentagoMove(0, 1, 0, 0, 0);
+		boardState.processMove(move);
+		move = new PentagoMove(1, 0, 0, 0, 1);
+		boardState.processMove(move);
+		move = new PentagoMove(0, 3, 0, 0, 0);
+		boardState.processMove(move);
+		move = new PentagoMove(1, 1, 0, 0, 1);
+		boardState.processMove(move);
+		move = new PentagoMove(0, 2, 0, 0, 0);
+		boardState.processMove(move);
 		
-		System.out.println(isValidCoord(-1, -1));
-		
-		for(int i = -1; i <=1 ; i++) {
-			for(int j = -1; j <=1 ; j++) {
-				if (isValidCoord(coord.getX() + i, coord.getY() + j)) {
-					PentagoCoord neighbouringCoord = new PentagoCoord(coord.getX() + i, coord.getY() + j);
-					if (boardState.getPieceAt(neighbouringCoord) == Piece.EMPTY) {// Has at least one neighbour! (including diagonals)
-						if(!(coord.getX() == neighbouringCoord.getX() && coord.getY() == neighbouringCoord.getY())) {// neighbour is not the original coord
-							System.out.println("x: " + neighbouringCoord.getX() + ", y: " + neighbouringCoord.getY());
-						}
-					}
-				}
-			}
-		}
+		System.out.println(boardEvaluationFn(boardState));
 	}
 	
+	/**
+	 * Return an estimate of how good the board is for the current player.
+	 * @param b the PentagoBoardState to evaluate
+	 * @return an integer estimate of the board's value
+	 */
+	private static int boardEvaluationFn(PentagoBoardState b) {
+		
+		Piece AI_PIECE = b.getTurnPlayer() == 0 ? Piece.WHITE : Piece.BLACK;
+		
+		int points = 0;
+		
+		for(int row = 0; row < 6; row++) { // CHECK ROWS AND COLUMNS
+			int streakRow = 0, streakCol = 0;
+			int bestRow = 0, bestCol = 0;
+			for(int col = 0; col < 6; col++) {
+				Piece curRow = b.getPieceAt(row, col);
+				Piece curCol = b.getPieceAt(col, row);
+				if (curRow == AI_PIECE) {
+					streakRow++;
+					if (streakRow > bestRow) {
+						bestRow = streakRow;
+					}
+				}
+				else {
+					streakRow = 0;
+				}
+				if (curCol == AI_PIECE) {
+					streakCol++;
+					if (streakCol > bestCol) {
+						bestCol = streakCol;
+					}
+				}
+				else {
+					streakCol = 0;
+				}
+			}
+			if (bestRow > 1) {
+				points += Math.pow(3, bestRow); // e.g., 3 times a 3-in-a-row is equal to ONE 4-in-a-row!
+			}
+			if (bestCol > 1) {
+				points += Math.pow(3, bestCol);
+			}
+			if (bestRow == 5 || bestCol == 5) { // Infinity points if its a winning board!
+				return Integer.MAX_VALUE;
+			}
+		}
+		
+		// CHECK TOP-LEFT --> BOTTOM-RIGHT diagonals
+		for(int row = 0; row < 5; row++) {
+			int x = row, y = 0;
+			int streak = 0;
+			int best = 0;
+			while(isValidCoord(x, y)) {
+				//check
+				Piece cur = b.getPieceAt(new PentagoCoord(x, y));
+				if (cur == AI_PIECE) {
+					streak++;
+					if(streak > best) {
+						best = streak;
+					}
+				}
+				else {
+					streak = 0;
+				}
+				x++;
+				y++;
+			}
+			if (best > 1) {
+				points += Math.pow(3, best); // e.g., 3 times a 3-in-a-row is equal to ONE 4-in-a-row!
+			}
+			if (best == 5) { // Infinity points if its a winning board!
+				return Integer.MAX_VALUE;
+			}
+		}
+		for(int col = 1; col < 5; col++) {
+			int x = 0, y = col;
+			int streak = 0;
+			int best = 0;
+			while(isValidCoord(x, y)) {
+				//check
+				Piece cur = b.getPieceAt(new PentagoCoord(x, y));
+				if (cur == AI_PIECE) {
+					streak++;
+					if(streak > best) {
+						best = streak;
+					}
+				}
+				else {
+					streak = 0;
+				}
+				x++;
+				y++;
+			}
+			if (best > 1) {
+				points += Math.pow(3, best); // e.g., 3 times a 3-in-a-row is equal to ONE 4-in-a-row!
+			}
+			if (best == 5) { // Infinity points if its a winning board!
+				return Integer.MAX_VALUE;
+			}
+		}
+		
+		// CHECK BOTTOM-LEFT --> TOP-RIGHT DIAGONALS
+		for(int row = 1; row < 6; row++) {
+			int x = row, y = 0;
+			int streak = 0;
+			int best = 0;
+			while(isValidCoord(x, y)) {
+				//check
+				Piece cur = b.getPieceAt(new PentagoCoord(x, y));
+				if (cur == AI_PIECE) {
+					streak++;
+					if(streak > best) {
+						best = streak;
+					}
+				}
+				else {
+					streak = 0;
+				}
+				x--;
+				y++;
+			}
+			if (best > 1) {
+				points += Math.pow(3, best); // e.g., 3 times a 3-in-a-row is equal to ONE 4-in-a-row!
+			}
+			if (best == 5) { // Infinity points if its a winning board!
+				return Integer.MAX_VALUE;
+			}
+		}
+		for(int col = 1; col < 5; col++) {
+			int x = 5, y = col;
+			int streak = 0;
+			int best = 0;
+			while(isValidCoord(x, y)) {
+				//check
+				Piece cur = b.getPieceAt(new PentagoCoord(x, y));
+				if (cur == AI_PIECE) {
+					streak++;
+					if(streak > best) {
+						best = streak;
+					}
+				}
+				else {
+					streak = 0;
+				}
+				x--;
+				y++;
+			}
+			if (best > 1) {
+				points += Math.pow(3, best); // e.g., 3 times a 3-in-a-row is equal to ONE 4-in-a-row!
+			}
+			if (best == 5) { // Infinity points if its a winning board!
+				return Integer.MAX_VALUE;
+			}
+		}
+		
+		return points;
+	}
+	
+	/**
+	 * A filtering predicate for a move that discards moves which don't neighbour another board piece.
+	 */
 	private static Predicate<NodeBoard> filterBoardsByTouching(){
 		return new Predicate<NodeBoard>() {
 			
@@ -90,6 +248,8 @@ public class MyTools {
 	public static int numChildrenCreated = 0;
 	public static Move MonteCarloTreeSearch(PentagoBoardState board) {
 		int startTime = (int) System.currentTimeMillis();
+		
+		System.out.println("EvalFn: " + boardEvaluationFn(board));
 		
 		NodeBoard rootBoard = new NodeBoard(board, null); // root contains null-move
 		Tree<String, NodeBoard> tree = new Tree<String, NodeBoard>(rootBoard); // Init search tree
@@ -164,8 +324,6 @@ public class MyTools {
 		ArrayList<Node<String, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
 		rootChildrenList.sort(NodeBoard.byHighestWinrate());
 		Move bestMove = rootChildrenList.get(0).data.move;
-		
-		filterBoardsByTouching().test(rootChildrenList.get(0).data);
 		
 		// Print sorted list and best winRate
 		//rootChildrenList.forEach(child -> {
