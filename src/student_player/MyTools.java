@@ -31,7 +31,7 @@ public class MyTools {
 		
 	}
 	
-	private static final int MOVE_TIME_LIMIT = 100; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
+	private static final int MOVE_TIME_LIMIT = 1800; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
 	
 	/**
 	 * Performs a Monte Carlo Tree Search, starting from the given boardState.
@@ -40,12 +40,87 @@ public class MyTools {
 	 */
 	public static int numRollouts = 0;
 	public static int numChildrenCreated = 0;
+	public static Move MonteCarloRAVE(PentagoBoardState board) {
+		int startTime = (int) System.currentTimeMillis();
+		
+		NodeBoard rootBoard = new NodeBoard(board, null); // root contains null-move
+		Tree<String, NodeBoard> tree = new Tree<String, NodeBoard>(rootBoard); // Init search tree
+		Node<String, NodeBoard> currentNode = tree.root; // Set initial node to root
+		
+		// Start search loop
+		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
+			if (currentNode.isLeaf()) // LEAF
+			{
+				// Perform a rollout if the leaf node has zero visits so far
+				if (currentNode.data.visitCount == 0) 
+				{
+					rolloutAndRAVE(currentNode);
+					currentNode = tree.root;
+				}
+				else 
+				{
+					generateChildren(currentNode);
+					
+					// Perform a rollout on the first child of the former leaf node
+					Node<String, NodeBoard> firstChild = currentNode.childMap().values().stream().findFirst().get();
+					rolloutAndRAVE(firstChild);
+					currentNode = tree.root;
+				}
+			}
+			else // NOT A LEAF
+			{
+				// Use the "Tree Policy" to navigate towards a leaf node.
+				double maxUCB = 0;
+				Node<String, NodeBoard> maxChild = null;
+				HashMap<String, Node<String, NodeBoard>> children = currentNode.childMap();
+				
+				//System.out.println("Calculating the UCB for all child nodes...");
+				// Iterate through the current node's children to calculate their UCBs
+				for(Node<String, NodeBoard> child : children.values()) {
+					
+					//System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
+					//System.out.println("Win count for UCB calculation: " + child.data.winCount);
+					
+					// Win rate is either zero or the child's wins / visits.
+					int visits = child.data.visitCount;
+					float childWinRate = child.data.winRate();
+					
+					int currentVisitCount = currentNode.data.visitCount;
+					double childUCB = childWinRate + Math.sqrt((2*Math.log(currentVisitCount)) / visits);
+				
+					// Replace max if a new highest UCB has been found
+					if (maxUCB < childUCB) {
+						maxUCB = childUCB;
+						maxChild = child;
+					}
+				}
+				// Set the current node to the child with highest UCB and restart the loop
+				currentNode = maxChild;
+ 			}
+		}// POST SEARCH
+		
+		// Find the node with the highest win rate
+		ArrayList<Node<String, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
+		rootChildrenList.sort(NodeBoard.byHighestWinrate());
+		Move bestMove = rootChildrenList.get(0).data.move;
+		
+		//Print MCTS stats
+		System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
+		numRollouts = 0;
+		numChildrenCreated = 0;
+		
+		// Print move string
+		//System.out.println("MCTS chose the move: " + bestMove.toPrettyString());
+		
+		return bestMove;
+	}
+	
 	public static Move MonteCarloTreeSearch(PentagoBoardState board) {
 		int startTime = (int) System.currentTimeMillis();
 		
 		NodeBoard rootBoard = new NodeBoard(board, null); // root contains null-move
-		Tree<Move, NodeBoard> tree = new Tree<Move, NodeBoard>(rootBoard); // Init search tree
-		Node<Move, NodeBoard> currentNode = tree.root; // Set initial node to root
+		Tree<String, NodeBoard> tree = new Tree<String, NodeBoard>(rootBoard); // Init search tree
+		Node<String, NodeBoard> currentNode = tree.root; // Set initial node to root
 		
 		// Start search loop
 		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
@@ -62,8 +137,10 @@ public class MyTools {
 					generateChildren(currentNode);
 					
 					// Perform a rollout on the first child of the former leaf node
-					Node<Move, NodeBoard> firstChild = currentNode.childMap().values().stream().findFirst().get();
-					rolloutWithUpdate(firstChild);
+					Optional<Node<String, NodeBoard>> firstChildOption = currentNode.childMap().values().stream().findFirst();
+					firstChildOption.ifPresent(firstChild -> {
+						rolloutWithUpdate(firstChild);
+					});
 					currentNode = tree.root;
 				}
 			}
@@ -71,12 +148,12 @@ public class MyTools {
 			{
 				// Use the "Tree Policy" to navigate towards a leaf node.
 				double maxUCB = 0;
-				Node<Move, NodeBoard> maxChild = null;
-				HashMap<Move, Node<Move, NodeBoard>> children = currentNode.childMap();
+				Node<String, NodeBoard> maxChild = null;
+				HashMap<String, Node<String, NodeBoard>> children = currentNode.childMap();
 				
 				//System.out.println("Calculating the UCB for all child nodes...");
 				// Iterate through the current node's children to calculate their UCBs
-				for(Node<Move, NodeBoard> child : children.values()) {
+				for(Node<String, NodeBoard> child : children.values()) {
 					
 					//System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
 					//System.out.println("Win count for UCB calculation: " + child.data.winCount);
@@ -102,18 +179,18 @@ public class MyTools {
 		//tree.root.childMap().values().forEach(child -> System.out.println(child.data.winRate()));
 		
 		// Find the node with the highest win rate
-		ArrayList<Node<Move, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
+		ArrayList<Node<String, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
 		rootChildrenList.sort(NodeBoard.byHighestWinrate());
 		Move bestMove = rootChildrenList.get(0).data.move;
 		
 		
 		//Print MCTS stats
-		System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
+		//System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
 		numRollouts = 0;
 		numChildrenCreated = 0;
 		
 		// Print move string
-		System.out.println("MCTS chose the move: " + bestMove.toPrettyString());
+		//System.out.println("MCTS chose the move: " + bestMove.toPrettyString());
 		
 		return bestMove;
 	}
@@ -123,7 +200,7 @@ public class MyTools {
 	 * initilizes the children using RootNodeBoard instead of NodeBoard.
 	 * @param currentNode is the node to generate children for.
 	 */
-	public static void generateChildren(Node<Move, NodeBoard> currentNode) {
+	public static void generateChildren(Node<String, NodeBoard> currentNode) {
 		
 		// Generate children if the leaf node has been visited before
 		for(PentagoMove move : currentNode.data.board.getAllLegalMoves())
@@ -131,7 +208,7 @@ public class MyTools {
 			numChildrenCreated++;
 			PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
 			newBoard.processMove(move); // Apply move to cloned board
-			currentNode.addChild(move, new NodeBoard(newBoard, move));// Add child to Monte Carlo Tree
+			currentNode.addChild(move.toPrettyString(), new NodeBoard(newBoard, move));// Add child to Monte Carlo Tree
 		}
 	}
 
@@ -140,7 +217,7 @@ public class MyTools {
 	 * the currentNode and each of its parents.
 	 * @param currentNode is the node that the rollout is performed on.
 	 */
-	public static void rolloutWithUpdate(Node<Move, NodeBoard> currentNode) {
+	public static void rolloutWithUpdate(Node<String, NodeBoard> currentNode) {
 		
 		numRollouts++;
 		// Perform rollout
@@ -161,6 +238,75 @@ public class MyTools {
 			else {
 				currentNode = currentNode.parent();
 			}
+		}
+	}
+	
+	public static void rolloutAndRAVE(Node<String, NodeBoard> currentNode) {
+		
+		System.out.println("############# Starting new rollout...");
+		numRollouts++;
+		
+		// Get siblings of the current node to possibly update after rollout
+		HashMap<String, Node<String, NodeBoard>> siblings = new HashMap<String, Node<String, NodeBoard>>();
+		if (currentNode.isRoot() == false) {
+			siblings = currentNode.parent().childMap();
+		}
+		
+		// Deep copy of the board state so we don't affect the board state in the tree
+		PentagoBoardState currentState = (PentagoBoardState) currentNode.data.board.clone();
+		int AI_player_number = currentState.getTurnPlayer();
+		
+		// Process random moves for each player until someone wins.
+		// and keep track of the siblings whose moves were played in this rollout
+		HashMap<String, Node<String, NodeBoard>> siblingsInRollout = new HashMap<String, Node<String, NodeBoard>>();
+		while(currentState.gameOver() == false) {
+			PentagoMove randomPentagoMove = (PentagoMove) currentState.getRandomMove();
+			
+			// If it's the AI's turn and the move key returns a sibling, add it to "siblingsInRollout"
+			Node<String, NodeBoard> siblingPlayed = siblings.get(randomPentagoMove.toPrettyString());
+			if (siblingPlayed != null) {
+				siblingsInRollout.put(randomPentagoMove.toPrettyString(), siblingPlayed);// place the sibling
+				System.out.println("Adding to Siblings In Rollout, total size is: " + siblingsInRollout.size());
+			}
+			
+			currentState.processMove(randomPentagoMove);
+		}
+		
+		// result is 1 if the AI agent won, 0 otherwise
+		int rolloutResult;
+		int winner = currentState.getWinner();
+		if (winner == AI_player_number) {
+			rolloutResult = 1;
+		}
+		else {
+			rolloutResult = 0;
+		}
+		//### End of rollout
+		
+		// normal update of win and visit counts all the way up the tree
+		boolean isUpdating = true;
+		while(isUpdating) {
+			currentNode.data.winCount += rolloutResult;
+			currentNode.data.visitCount += 1;
+			//System.out.println("Wincount: " + currentNode.data.winCount);
+			//System.out.println("Visitcount: " + currentNode.data.visitCount);
+			if (currentNode.isRoot()) {
+				isUpdating = false;
+			}
+			else {
+				currentNode = currentNode.parent();
+			}
+		}
+		
+		// additionally update any siblings whose moves may have been played during the rollout
+		if (rolloutResult == 0) return;
+		int count = 1; //test
+		for(Node<String, NodeBoard> sibling : siblingsInRollout.values()) {
+			sibling.data.winCount += 1;
+			sibling.data.visitCount += 1;
+			System.out.println("Updating data in sibling " + count + " of " + siblingsInRollout.size() + 
+					"<<< " + sibling.data.winCount + "wins, " + sibling.data.visitCount + " visits >>>");
+			count++;
 		}
 	}
 
@@ -224,11 +370,11 @@ class NodeBoard{
 	/**
 	 * A comparator that sorts MonteCarloData nodes by highest winrate first.
 	 */
-	public static Comparator<Node<Move, NodeBoard>> byHighestWinrate(){
-		return new Comparator<Node<Move, NodeBoard>>() {
+	public static Comparator<? super Node<String, NodeBoard>> byHighestWinrate(){
+		return new Comparator<Node<String, NodeBoard>>() {
 
 			@Override
-			public int compare(Node<Move, NodeBoard> n1, Node<Move, NodeBoard> n2) {
+			public int compare(Node<String, NodeBoard> n1, Node<String, NodeBoard> n2) {
 				
 				float n1Winrate = (n1.data.winCount + 1) / (n1.data.visitCount + 1);
 				float n2Winrate = (n2.data.winCount + 1) / (n2.data.visitCount + 1);

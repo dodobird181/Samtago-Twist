@@ -40,11 +40,11 @@ public class Autoplay {
             Process server = server_pb.start();
 
             ProcessBuilder client1_pb = new ProcessBuilder("java", "-cp", "bin", "-Xms520m", "-Xmx520m",
-                    "boardgame.Client", "pentago_twist.RandomPentagoPlayer");
+                    "boardgame.Client", "student_player.StudentPlayer");
             client1_pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
             ProcessBuilder client2_pb = new ProcessBuilder("java", "-cp", "bin", "-Xms520m", "-Xmx520m",
-                    "boardgame.Client", "student_player.StudentPlayer");
+                    "boardgame.Client", "pentago_twist.RandomPentagoPlayer");
             client2_pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
             for (int i = 0; i < n_games; i++) {
@@ -64,7 +64,7 @@ public class Autoplay {
                     Thread.currentThread().interrupt();
                 }
 
-                Process client2 = ((i % 2 == 0) ? client2_pb.start() : client1_pb.start());
+                Process client2 = ((i % 2 != 0) ? client1_pb.start() : client2_pb.start());
 
                 try {
                     client1.waitFor();
