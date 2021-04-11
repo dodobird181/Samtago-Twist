@@ -27,9 +27,59 @@ public class MyTools {
 	 */
 	public static void main(String[] args) {
 		
+		PentagoBoardState boardState = new PentagoBoardState();
+		PentagoCoord coord = new PentagoCoord(0, 0);
+		
+		System.out.println(isValidCoord(-1, -1));
+		
+		for(int i = -1; i <=1 ; i++) {
+			for(int j = -1; j <=1 ; j++) {
+				if (isValidCoord(coord.getX() + i, coord.getY() + j)) {
+					PentagoCoord neighbouringCoord = new PentagoCoord(coord.getX() + i, coord.getY() + j);
+					if (boardState.getPieceAt(neighbouringCoord) == Piece.EMPTY) {// Has at least one neighbour! (including diagonals)
+						if(!(coord.getX() == neighbouringCoord.getX() && coord.getY() == neighbouringCoord.getY())) {// neighbour is not the original coord
+							System.out.println("x: " + neighbouringCoord.getX() + ", y: " + neighbouringCoord.getY());
+						}
+					}
+				}
+			}
+		}
 	}
 	
-	private static final int MOVE_TIME_LIMIT = 1800; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
+	private static Predicate<NodeBoard> filterBoardsByTouching(){
+		return new Predicate<NodeBoard>() {
+			
+			@Override
+			public boolean test(NodeBoard nodeBoard) {
+				PentagoBoardState boardState = nodeBoard.board;
+				PentagoMove move = (PentagoMove) nodeBoard.move;
+				PentagoCoord coord = move.getMoveCoord();
+				
+				for(int i = -1; i <=1 ; i++) {
+					for(int j = -1; j <=1 ; j++) {
+						if (isValidCoord(coord.getX() + i, coord.getY() + j)) {
+							PentagoCoord neighbouringCoord = new PentagoCoord(coord.getX() + i, coord.getY() + j);
+							if (boardState.getPieceAt(neighbouringCoord) == Piece.EMPTY) {// Has at least one neighbour! (including diagonals)
+								if(!(coord.getX() == neighbouringCoord.getX() && coord.getY() == neighbouringCoord.getY())) {// neighbour is not the original coord
+									//System.out.println("x: " + neighbouringCoord.getX() + ", y: " + neighbouringCoord.getY());
+									return true;
+								}
+							}
+						}
+					}
+				}
+				
+				return false;
+			}
+		};
+	}
+	
+	//COPIED FROM PENTAGO COORD FOR ACCESS
+	private static boolean isValidCoord(int x, int y) {
+        return x < PentagoBoardState.BOARD_SIZE && y < PentagoBoardState.BOARD_SIZE && x >= 0 && y >= 0;
+    }
+	
+	private static final int MOVE_TIME_LIMIT = 100; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
 	
 	/**
 	 * Performs a Monte Carlo Tree Search, starting from the given boardState.
