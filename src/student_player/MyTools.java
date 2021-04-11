@@ -62,8 +62,10 @@ public class MyTools {
 					generateChildren(currentNode);
 					
 					// Perform a rollout on the first child of the former leaf node
-					Node<Move, NodeBoard> firstChild = currentNode.childMap().values().stream().findFirst().get();
-					rolloutWithUpdate(firstChild);
+					Optional<Node<Move, NodeBoard>> firstChildOpt = currentNode.childMap().values().stream().findFirst();
+					firstChildOpt.ifPresent(firstChild -> {
+						rolloutWithUpdate(firstChild);
+					});
 					currentNode = tree.root;
 				}
 			}
