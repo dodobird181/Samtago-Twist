@@ -3,6 +3,7 @@ package student_player;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,13 +29,9 @@ public class MyTools {
 	 */
 	public static void main(String[] args) {
 		
-		StudentPlayer player = new StudentPlayer();
-		BoardState pBoardState = player.createBoard().getBoardState();
-		
-		MonteCarloTreeSearch((PentagoBoardState) pBoardState);
 	}
 	
-	private static final int MOVE_TIME_LIMIT = 1800; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
+	private static final int MOVE_TIME_LIMIT = 100; // 2 second time limit minus a buffer of 200 ms for the rest of the code to terminate
 	
 	/**
 	 * Performs a Monte Carlo Tree Search, starting from the given boardState.
@@ -46,9 +43,9 @@ public class MyTools {
 	public static Move MonteCarloTreeSearch(PentagoBoardState board) {
 		int startTime = (int) System.currentTimeMillis();
 		
-		MonteCarloData rootDatum = new MonteCarloData(board, null); // Root contains null-move
-		Tree<MonteCarloData> searchTree = new Tree<MonteCarloData>(rootDatum); // Init search tree
-		Node<MonteCarloData> currentNode = searchTree.rootNode;
+		NodeBoard rootBoard = new NodeBoard(board, null); // root contains null-move
+		Tree<Move, NodeBoard> tree = new Tree<Move, NodeBoard>(rootBoard); // Init search tree
+		Node<Move, NodeBoard> currentNode = tree.root; // Set initial node to root
 		
 		// Start search loop
 		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
@@ -58,42 +55,35 @@ public class MyTools {
 				if (currentNode.data.visitCount == 0) 
 				{
 					rolloutWithUpdate(currentNode);
-					currentNode = searchTree.rootNode;
+					currentNode = tree.root;
 				}
 				else 
 				{
-					generateChildrenNoDuplicateBoardStates(currentNode);
+					generateChildren(currentNode);
 					
 					// Perform a rollout on the first child of the former leaf node
-					Node<MonteCarloData> firstChild = currentNode.getChildren().get(0);
+					Node<Move, NodeBoard> firstChild = currentNode.childMap().values().stream().findFirst().get();
 					rolloutWithUpdate(firstChild);
-					currentNode = searchTree.rootNode;
+					currentNode = tree.root;
 				}
 			}
 			else // NOT A LEAF
 			{
 				// Use the "Tree Policy" to navigate towards a leaf node.
 				double maxUCB = 0;
-				Node<MonteCarloData> maxChild = null;
-				List<Node<MonteCarloData>> children = currentNode.getChildren();
+				Node<Move, NodeBoard> maxChild = null;
+				HashMap<Move, Node<Move, NodeBoard>> children = currentNode.childMap();
 				
 				//System.out.println("Calculating the UCB for all child nodes...");
 				// Iterate through the current node's children to calculate their UCBs
-				for(Node<MonteCarloData> child : children) {
+				for(Node<Move, NodeBoard> child : children.values()) {
 					
 					//System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
 					//System.out.println("Win count for UCB calculation: " + child.data.winCount);
 					
 					// Win rate is either zero or the child's wins / visits.
 					int visits = child.data.visitCount;
-					int wins = child.data.winCount;
-					float childWinRate;
-					if (visits == 0) {
-						childWinRate = 0;
-					}
-					else{
-						childWinRate = wins / visits;
-					}
+					float childWinRate = child.data.winRate();
 					
 					int currentVisitCount = currentNode.data.visitCount;
 					double childUCB = childWinRate + Math.sqrt((2*Math.log(currentVisitCount)) / visits);
@@ -109,8 +99,13 @@ public class MyTools {
  			}
 		}// POST SEARCH
 		
-		// Find the move associated with the node that has the highest winRate
-		searchTree.rootNode.getChildren().sort(MonteCarloData.highestWinrate());
+		//tree.root.childMap().values().forEach(child -> System.out.println(child.data.winRate()));
+		
+		// Find the node with the highest win rate
+		ArrayList<Node<Move, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
+		rootChildrenList.sort(NodeBoard.byHighestWinrate());
+		Move bestMove = rootChildrenList.get(0).data.move;
+		
 		
 		//Print MCTS stats
 		System.out.println("Finished MCTS with " + numRollouts + " rollouts and " + numChildrenCreated + " child nodes.");
@@ -118,12 +113,17 @@ public class MyTools {
 		numChildrenCreated = 0;
 		
 		// Print move string
-		System.out.println("MCTS chose the move: " + searchTree.rootNode.getChildren().get(0).data.move.toPrettyString());
+		System.out.println("MCTS chose the move: " + bestMove.toPrettyString());
 		
-		return searchTree.rootNode.getChildren().get(0).data.move;
+		return bestMove;
 	}
 	
-	public static void generateChildrenPlain(Node<MonteCarloData> currentNode) {
+	/**
+	 * Generates children for the current node. If the current node is the root, then 
+	 * initilizes the children using RootNodeBoard instead of NodeBoard.
+	 * @param currentNode is the node to generate children for.
+	 */
+	public static void generateChildren(Node<Move, NodeBoard> currentNode) {
 		
 		// Generate children if the leaf node has been visited before
 		for(PentagoMove move : currentNode.data.board.getAllLegalMoves())
@@ -131,27 +131,7 @@ public class MyTools {
 			numChildrenCreated++;
 			PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
 			newBoard.processMove(move); // Apply move to cloned board
-			currentNode.addChild(new MonteCarloData(newBoard, move));// Add child to Monte Carlo Tree
-		}
-	}
-	
-	public static void generateChildrenNoDuplicateBoardStates(Node<MonteCarloData> currentNode) {
-		
-		ArrayList<PentagoBoardState> generatedStates = new ArrayList<PentagoBoardState>();
-		
-		// Generate children if the leaf node has been visited before
-		for(PentagoMove move : currentNode.data.board.getAllLegalMoves())
-		{
-			
-			PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
-			newBoard.processMove(move); // Apply move to cloned board
-			
-			if (!generatedStates.contains(newBoard)) {
-				currentNode.addChild(new MonteCarloData(newBoard, move));// Add child to Monte Carlo Tree
-				generatedStates.add(newBoard);
-				numChildrenCreated++;
-			}
-			
+			currentNode.addChild(move, new NodeBoard(newBoard, move));// Add child to Monte Carlo Tree
 		}
 	}
 
@@ -160,7 +140,7 @@ public class MyTools {
 	 * the currentNode and each of its parents.
 	 * @param currentNode is the node that the rollout is performed on.
 	 */
-	public static void rolloutWithUpdate(Node<MonteCarloData> currentNode) {
+	public static void rolloutWithUpdate(Node<Move, NodeBoard> currentNode) {
 		
 		numRollouts++;
 		// Perform rollout
@@ -217,26 +197,38 @@ public class MyTools {
  * Datatype of information to store inside each node for the MCTS.
  * @author Samuel Morris (dodobird)
  */
-class MonteCarloData{
+class NodeBoard{
 	
 	public int visitCount = 0;
 	public int winCount = 0;
 	public PentagoBoardState board;
-	public PentagoMove move;
+	public Move move;
 	
-	public MonteCarloData(PentagoBoardState board, PentagoMove move) {
+	public NodeBoard(PentagoBoardState board, Move move) {
 		this.board = board;
 		this.move = move;
 	}
 	
 	/**
+	 * Returns the win rate of the node.
+	 */
+	public float winRate() {
+		if (visitCount == 0) {
+			return 0;
+		}
+		else {
+			return  (float)winCount / (float)visitCount;
+		}
+	}
+	
+	/**
 	 * A comparator that sorts MonteCarloData nodes by highest winrate first.
 	 */
-	public static Comparator<Node<MonteCarloData>> highestWinrate(){
-		return new Comparator<Node<MonteCarloData>>() {
+	public static Comparator<Node<Move, NodeBoard>> byHighestWinrate(){
+		return new Comparator<Node<Move, NodeBoard>>() {
 
 			@Override
-			public int compare(Node<MonteCarloData> n1, Node<MonteCarloData> n2) {
+			public int compare(Node<Move, NodeBoard> n1, Node<Move, NodeBoard> n2) {
 				
 				float n1Winrate = (n1.data.winCount + 1) / (n1.data.visitCount + 1);
 				float n2Winrate = (n2.data.winCount + 1) / (n2.data.visitCount + 1);
@@ -248,73 +240,65 @@ class MonteCarloData{
 	}
 }
 
-
-
-
-
-
-
-
-
-
 /**
- * A simple implementation of a tree in Java.
+ * A generically-typed implementation of a tree in Java, using a HashMap.
  * @author Samuel Morris (dodobird)
- * @param <T> The datatype to store inside each tree node.
  */
-class Tree<T>{
+class Tree<K, V>{
 
-	public Node<T> rootNode;
+	public Node<K, V> root;
 	
 	/**
 	 * Construct a new tree by passing a value for the root node.
 	 * @param rootValue is the value that the root of the tree will have
 	 * when the tree is initilized.
 	 */
-	public Tree(T rootValue) {
+	public Tree(V rootValue) {
 		assert rootValue != null;
-		this.rootNode = new Node<T>(rootValue, null);
+		this.root = new Node<K, V>(rootValue, null);// Parent of the root node is null.
 	}
 }
 
 /**
- * Implementation of a tree node, to be used in conjunction with the Tree class above.
+ * A generically typed node to be used in a tree-like datastructure. Children are stored in
+ * a hashmap for quick access.
  * @author Samuel Morris (dodobird)
- * @param <T> The type of value contained inside the node.
+ * @param <K> The type of the key for accessing the hashmap of children.
+ * @param <V> The type of the datum stored inside this node and all its children.
  */
-class Node<T>{
+class Node<K, V>{
 	
-	public T data;
-	private Optional<Node<T>> parent;// immutable option for a parent node
-	private ArrayList<Node<T>> children;// mutable list of children
+	public V data;
+	private Optional<Node<K, V>> parent;// immutable option for a parent node
+	private HashMap<K, Node<K, V>> children;// mutable map of children, unique for each possible move
 	
 	/**
 	 * Construct a node without any children.
 	 * @param value of the node.
 	 * @param parent of the node.
 	 */
-	public Node(T value, Node<T> parent) {
+	public Node(V value, Node<K, V> parent) {
 		this.data = value;
 		this.parent = Optional.ofNullable(parent);
-		children = new ArrayList<Node<T>>();
+		children = new HashMap<K, Node<K, V>>();
 	}
 	
 	/**
-	 * @return the ArrayList of this node's children
-	 */
-	public List<Node<T>> getChildren() {
-		return children;
-	}
-
-	/**
-	 * Construct a node with an ARrayList of children.
+	 * Construct a node with a pre-defined HashMap of children.
 	 * @param value of the node.
-	 * @param parent of the node.
-	 * @param children is an ArrayList of child nodes for this node.
+	 * @param parent of this node. 
+	 * @param children is the HashMap of children for this node.
 	 */
-	public Node(T value, Node<T> parent, ArrayList<Node<T>> children) {
+	public Node(V value, Node<K, V> parent, HashMap<K, Node<K, V>> children) {
 		this(value, parent);
 		this.children = children;
+	}
+	
+	/**
+	 * @return a HashMap of children, with possible moves from this node's board-state as keys.
+	 */
+	public HashMap<K, Node<K, V>> childMap() {
+		return children;
 	}
 	
 	/**
@@ -324,17 +308,17 @@ class Node<T>{
 	 * 
 	 * @param value of the child node.
 	 */
-	public void addChild(T value) {
-		Node<T> child = new Node<T>(value, this);
-		children.add(child);
+	public void addChild(K key, V value) {
+		Node<K, V> child = new Node<K, V>(value, this);
+		children.put(key, child);
 	}
 	
 	/**
 	 * Return true if this node's children ArrayList contains the given child.
 	 * @param child is the node to check if it is the child of this node.
 	 */
-	public boolean hasChild(Node<T> child) {
-		return children.contains(child);
+	public boolean hasChild(K key) {
+		return children.containsKey(key);
 	}
 	
 	/**
@@ -342,15 +326,8 @@ class Node<T>{
 	 * one exists matching the given child.
 	 * @param child node to remove.
 	 */
-	public void removeChild(Node<T> child) {
-		children.remove(child);
-	}
-	
-	/**
-	 * @return An unmodifiable list of this node's children.
-	 */
-	public List<Node<T>> getUnmodifiableChildren() {
-		return Collections.unmodifiableList(children);
+	public void removeChild(K key) {
+		children.remove(key);
 	}
 	
 	/**
@@ -378,7 +355,7 @@ class Node<T>{
 	 * @return The parent of this node.
 	 * @throws UnsupportedOperationException if this is a root node.
 	 */
-	public Node<T> parent(){
+	public Node<K, V> parent(){
 		return parent.orElseThrow(() -> 
 		new UnsupportedOperationException(
 				"Cannot access the parent of a root node!"
@@ -391,8 +368,8 @@ class Node<T>{
 	@Override
 	public boolean equals(Object o) {
 		if (o == null) return false;
-		if (!(o instanceof Node<?>)) return false;
-		Node<?> n = (Node<?>)o;
+		if (!(o instanceof Node<?, ?>)) return false;
+		Node<?, ?> n = (Node<?, ?>)o;
 		if (n.data == this.data && n.parent.equals(this.parent)) {
 			return true;
 		}

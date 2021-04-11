@@ -27,4 +27,6 @@ public class StudentPlayer extends PentagoPlayer {
     public Move chooseMove(PentagoBoardState boardState) {
         return MyTools.MonteCarloTreeSearch(boardState);
     }
+    
+    
 }
