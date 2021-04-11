@@ -1,17 +1,15 @@
 package student_player;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
-import boardgame.Board;
-import boardgame.BoardState;
 import boardgame.Move;
-import pentago_twist.PentagoBoard;
 import pentago_twist.PentagoBoardState;
+import pentago_twist.PentagoBoardState.Piece;
+import pentago_twist.PentagoCoord;
 import pentago_twist.PentagoMove;
 
 public class MyTools {
@@ -44,8 +42,19 @@ public class MyTools {
 		int startTime = (int) System.currentTimeMillis();
 		
 		NodeBoard rootBoard = new NodeBoard(board, null); // root contains null-move
-		Tree<Move, NodeBoard> tree = new Tree<Move, NodeBoard>(rootBoard); // Init search tree
-		Node<Move, NodeBoard> currentNode = tree.root; // Set initial node to root
+		Tree<String, NodeBoard> tree = new Tree<String, NodeBoard>(rootBoard); // Init search tree
+		Node<String, NodeBoard> currentNode = tree.root; // Set initial node to root
+		
+		// Immediately check to see if a winning move exists
+		ArrayList<PentagoMove> moves = currentNode.data.board.getAllLegalMoves();
+		int AI_PLAYER_NUMBER = currentNode.data.board.getTurnPlayer();
+		for(PentagoMove move : moves) {
+			PentagoBoardState newClone = (PentagoBoardState) currentNode.data.board.clone();
+			newClone.processMove(move);
+			if (newClone.getWinner() == AI_PLAYER_NUMBER) {
+				return move; //return if a winning move exists
+			}
+		}
 		
 		// Start search loop
 		while((int) System.currentTimeMillis() - startTime < MOVE_TIME_LIMIT) {
@@ -54,7 +63,7 @@ public class MyTools {
 				// Perform a rollout if the leaf node has zero visits so far
 				if (currentNode.data.visitCount == 0) 
 				{
-					rolloutWithUpdate(currentNode);
+					rolloutAndRAVE(currentNode);
 					currentNode = tree.root;
 				}
 				else 
@@ -62,9 +71,9 @@ public class MyTools {
 					generateChildren(currentNode);
 					
 					// Perform a rollout on the first child of the former leaf node
-					Optional<Node<Move, NodeBoard>> firstChildOpt = currentNode.childMap().values().stream().findFirst();
+					Optional<Node<String, NodeBoard>> firstChildOpt = currentNode.childMap().values().stream().findFirst();
 					firstChildOpt.ifPresent(firstChild -> {
-						rolloutWithUpdate(firstChild);
+						rolloutAndRAVE(firstChild);
 					});
 					currentNode = tree.root;
 				}
@@ -73,12 +82,12 @@ public class MyTools {
 			{
 				// Use the "Tree Policy" to navigate towards a leaf node.
 				double maxUCB = 0;
-				Node<Move, NodeBoard> maxChild = null;
-				HashMap<Move, Node<Move, NodeBoard>> children = currentNode.childMap();
+				Node<String, NodeBoard> maxChild = null;
+				HashMap<String, Node<String, NodeBoard>> children = currentNode.childMap();
 				
 				//System.out.println("Calculating the UCB for all child nodes...");
 				// Iterate through the current node's children to calculate their UCBs
-				for(Node<Move, NodeBoard> child : children.values()) {
+				for(Node<String, NodeBoard> child : children.values()) {
 					
 					//System.out.println("Visit count for UCB calculation: " + child.data.visitCount);
 					//System.out.println("Win count for UCB calculation: " + child.data.winCount);
@@ -102,9 +111,11 @@ public class MyTools {
 		}// POST SEARCH
 		
 		// Find the node with the highest win rate
-		ArrayList<Node<Move, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
+		ArrayList<Node<String, NodeBoard>> rootChildrenList = new ArrayList<>(tree.root.childMap().values());
 		rootChildrenList.sort(NodeBoard.byHighestWinrate());
 		Move bestMove = rootChildrenList.get(0).data.move;
+		
+		filterBoardsByTouching().test(rootChildrenList.get(0).data);
 		
 		// Print sorted list and best winRate
 		//rootChildrenList.forEach(child -> {
@@ -129,7 +140,7 @@ public class MyTools {
 	 * initilizes the children using RootNodeBoard instead of NodeBoard.
 	 * @param currentNode is the node to generate children for.
 	 */
-	public static void generateChildren(Node<Move, NodeBoard> currentNode) {
+	public static void generateChildren(Node<String, NodeBoard> currentNode) {
 		
 		// Generate children if the leaf node has been visited before
 		for(PentagoMove move : currentNode.data.board.getAllLegalMoves())
@@ -137,8 +148,15 @@ public class MyTools {
 			numChildrenCreated++;
 			PentagoBoardState newBoard = (PentagoBoardState) currentNode.data.board.clone();
 			newBoard.processMove(move); // Apply move to cloned board
-			currentNode.addChild(move, new NodeBoard(newBoard, move));// Add child to Monte Carlo Tree
+			
+			NodeBoard boardToAdd = new NodeBoard(newBoard, move);
+			if (filterBoardsByTouching().test(boardToAdd)) {
+				currentNode.addChild(move.toPrettyString(), boardToAdd);// Add child to Monte Carlo Tree
+			}
 		}
+		
+		//System.out.println("Legal moves size: " + currentNode.data.board.getAllLegalMoves().size());
+		//System.out.println("Filtered moves size: " + currentNode.childMap().size());
 	}
 
 	/**
@@ -167,6 +185,72 @@ public class MyTools {
 			else {
 				currentNode = currentNode.parent();
 			}
+		}
+	}
+	
+	public static void rolloutAndRAVE(Node<String, NodeBoard> currentNode) {
+		numRollouts++;
+		
+		// Get siblings of the current node to possibly update after rollout
+		HashMap<String, Node<String, NodeBoard>> siblings = new HashMap<String, Node<String, NodeBoard>>();
+		if (currentNode.isRoot() == false) {
+			siblings = currentNode.parent().childMap();
+		}
+		
+		// Deep copy of the board state so we don't affect the board state in the tree
+		PentagoBoardState currentState = (PentagoBoardState) currentNode.data.board.clone();
+		int AI_player_number = currentState.getTurnPlayer();
+		
+		// Process random moves for each player until someone wins.
+		// and keep track of the siblings whose moves were played in this rollout
+		HashMap<String, Node<String, NodeBoard>> siblingsInRollout = new HashMap<String, Node<String, NodeBoard>>();
+		while(currentState.gameOver() == false) {
+			PentagoMove randomPentagoMove = (PentagoMove) currentState.getRandomMove();
+			
+			// If it's the AI's turn and the move key returns a sibling, add it to "siblingsInRollout"
+			Node<String, NodeBoard> siblingPlayed = siblings.get(randomPentagoMove.toPrettyString());
+			if (siblingPlayed != null) {
+				siblingsInRollout.put(randomPentagoMove.toPrettyString(), siblingPlayed);// place the sibling
+				//System.out.println("Adding to Siblings In Rollout, total size is: " + siblingsInRollout.size());
+			}
+			
+			currentState.processMove(randomPentagoMove);
+		}
+		
+		// result is 1 if the AI agent won, 0 otherwise
+		int rolloutResult;
+		int winner = currentState.getWinner();
+		if (winner == AI_player_number) {
+			rolloutResult = 1;
+		}
+		else {
+			rolloutResult = 0;
+		}
+		//### End of rollout
+		
+		// normal update of win and visit counts all the way up the tree
+		boolean isUpdating = true;
+		while(isUpdating) {
+			currentNode.data.winCount += rolloutResult;
+			currentNode.data.visitCount += 1;
+			//System.out.println("Wincount: " + currentNode.data.winCount);
+			//System.out.println("Visitcount: " + currentNode.data.visitCount);
+			if (currentNode.isRoot()) {
+				isUpdating = false;
+			}
+			else {
+				currentNode = currentNode.parent();
+			}
+		}
+		
+		// additionally update any siblings whose moves may have been played during the rollout
+		if (rolloutResult == 0) return;
+		int count = 1; //test
+		for(Node<String, NodeBoard> sibling : siblingsInRollout.values()) {
+			sibling.data.winCount += 1;
+			sibling.data.visitCount += 1;
+			//System.out.println("Updating data in sibling " + count + " of " + siblingsInRollout.size() + "<<< " + sibling.data.winCount + "wins, " + sibling.data.visitCount + " visits >>>");
+			count++;
 		}
 	}
 
@@ -230,11 +314,11 @@ class NodeBoard{
 	/**
 	 * A comparator that sorts MonteCarloData nodes by highest winrate first.
 	 */
-	public static Comparator<Node<Move, NodeBoard>> byHighestWinrate(){
-		return new Comparator<Node<Move, NodeBoard>>() {
+	public static Comparator<Node<String, NodeBoard>> byHighestWinrate(){
+		return new Comparator<Node<String, NodeBoard>>() {
 
 			@Override
-			public int compare(Node<Move, NodeBoard> n1, Node<Move, NodeBoard> n2) {
+			public int compare(Node<String, NodeBoard> n1, Node<String, NodeBoard> n2) {
 				
 				if (n1.data.winRate() > n2.data.winRate()) return -1;
 				else if (n1.data.winRate() < n2.data.winRate()) return 1;
