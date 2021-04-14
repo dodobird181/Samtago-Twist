@@ -8,7 +8,7 @@ import pentago_twist.RandomPentagoPlayer;
 
 public class ServerlessAutoplay {
 	
-	private static int NUMBER_OF_GAMES = 25;
+	private static int NUMBER_OF_GAMES = 100;
 	
 	public static void main(String[] args) {
 		new ServerlessAutoplay(new StudentPlayer(), new RandomPentagoPlayer(), NUMBER_OF_GAMES);
